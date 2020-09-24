@@ -1,0 +1,259 @@
+---
+title: "Waterhemp Challenge - LAN"
+author: "Maxwel Coura Oliveira"
+date: "10/1/2019"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r, include=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(glmmTMB)
+library(car)
+library(emmeans)
+library(lmerTest)
+library(lme4)
+```
+
+
+```{r, include=FALSE}
+data <- read_csv("Landata.csv")
+glimpse(data)
+data$year <- as.factor(data$year)
+```
+
+
+
+
+
+
+# Waterhemp Control
+
+```{r, echo=FALSE, include=FALSE}
+WeeC <- data %>% 
+          filter(herbicide != "nontreated")  # remove nontreated 
+```
+
+## 28 d after treatment
+
+```{r, echo=FALSE, include=FALSE}
+model1 <- glmmTMB(wt28d ~ herbicide*year + (1|year:rep), beta_family(link = "logit"), data=WeeC)
+Anova(model1)
+```
+
+```{r, echo=FALSE, include=FALSE}
+emmip(model1, herbicide ~ year | year) 
+```
+
+
+
+```{r, echo=FALSE, include=FALSE}
+plot(emmeans(model1, ~ herbicide | year*herbicide))
+```
+
+
+
+```{r, echo=FALSE, include=FALSE}
+Lsmeans <- emmeans(model1, ~ herbicide | year*herbicide, cont="pairwise", adjust="none", type="response")
+
+Constrasts <- Lsmeans$contrasts
+Constrasts
+```
+
+```{r, echo=FALSE, include=FALSE}
+plot(Lsmeans, comparisons =TRUE, adjust="none") + theme_bw()
+```
+
+
+
+```{r, echo=FALSE, warning=FALSE}
+CLD1<-CLD(Lsmeans, alpha=0.05, Letters=letters, adjust="none", reversed = TRUE)
+```
+
+```{r}
+CLD <- CLD %>% 
+  mutate(DAT= "25 DAT")
+```
+
+
+
+
+```{r, echo=FALSE, include=FALSE}
+ggplot(CLD, aes(x=herbicide, y=prop*100)) + facet_grid(~year) +  coord_flip() + 
+  geom_point(size=2, color="#282728") + 
+#    geom_rect(aes(xmin=0,xmax=4.5,ymin=-Inf,ymax=Inf),
+#                    fill="yellow") + 
+ theme_bw() +  labs(y="Waterhemp control (%)", x="", title="Waterhemp control at 25 DAT") +
+     geom_errorbar(aes(ymin  =  lower.CL*100, ymax  =  upper.CL*100), width =  0.2, size  =  0.7, color="#282728") + theme(axis.title = element_text(size=16, color="#282728"), axis.text = element_text(size=15), 
+      plot.title = element_text(size=20, face="bold", hjust = 0, color="#c5050c"),                        strip.text = element_text(size=18, face="bold", color="#282728"), strip.background =element_rect(fill="#dadfe1")) + geom_hline(yintercept=90, linetype="dashed", color="#c5050c") +
+  ggsave("Figure25.png", width=8, height=12, dpi=300)
+```
+
+
+## 42 d after treatment
+
+
+```{r, echo=FALSE, include=FALSE}
+model2 <- glmmTMB(wt42d ~ herbicide*year + (1|year:rep), beta_family(link = "logit"), data=WeeC)
+Anova(model2)
+```
+
+```{r, echo=FALSE, include=FALSE}
+emmip(model2, herbicide ~ year | year) 
+```
+
+
+
+```{r, echo=FALSE, include=FALSE}
+plot(emmeans(model2, ~ herbicide | year*herbicide))
+```
+
+
+
+```{r, echo=FALSE, include=FALSE}
+Lsmeans2 <- emmeans(model2, ~ herbicide | year*herbicide, cont="pairwise", adjust="none", type="response")
+Lsmeans2
+```
+
+```{r, echo=FALSE, include=FALSE}
+plot(Lsmeans2, comparisons =TRUE, adjust="none") + theme_bw()
+```
+
+
+
+```{r, echo=FALSE, warning=FALSE}
+CLD2<-CLD(Lsmeans2, alpha=0.05, Letters=letters, adjust="none", reversed = TRUE)
+CLD2
+```
+
+```{r, echo=FALSE, include=FALSE}
+ggplot(CLD2, aes(x=herbicide, y=prop*100)) + facet_grid(~year) +  coord_flip() + 
+  geom_point(size=2, color="#282728") + 
+#    geom_rect(aes(xmin=0,xmax=4.5,ymin=-Inf,ymax=Inf),
+#                    fill="yellow") + 
+ theme_bw() +  labs(y="Waterhemp control (%)", x="", title="Waterhemp control at 50 DAT") +
+     geom_errorbar(aes(ymin  =  lower.CL*100, ymax  =  upper.CL*100), width =  0.2, size  =  0.7, color="#282728") + theme(axis.title = element_text(size=16, color="#282728"), axis.text.x = element_text(size=15, angle=45, hjust=1), axis.text.y = element_text(size=15),
+      plot.title = element_text(size=20, face="bold", hjust = 0, color="#c5050c"),                        strip.text = element_text(size=18, face="bold", color="#282728"), strip.background =element_rect(fill="#dadfe1")) + geom_hline(yintercept=90, linetype="dashed", color="#c5050c") +
+  ggsave("Figure50.png", width=8, height=12, dpi=300)
+```
+
+
+```{r}
+CLD2 <- CLD2 %>% 
+  mutate(DAT= "50 DAT")
+```
+
+
+```{r}
+new <- full_join(CLD, CLD2)
+```
+
+```{r}
+new$herbicide <- factor(new$herbicide, levels=c("Fierce MTZ (16 fl. oz/acre)", "Fierce XLT (3.75-4 oz/acre)", "Zidua PRO (6 fl. oz/acre)", "Trivence (6 oz/acre)", "Afforia (2.5 oz/acre)", "Enlite (2.8 oz/acre)", "Canopy DF (2.25 oz/acre)", "Boundary (28.8 fl. oz/acre)", "Fierce (3-4 oz/acre)", "Prefix (32 fl. oz/acre)", "Verdict (5 fl. oz/acre)", "Authority Supreme (8 fl. oz/acre)", "Authority MTZ (12-16 oz/acre)", "Broadaxe XC (25 fl. oz/acre)", "Valor XLT (3 oz/acre)",  "Surveil (3.5 oz/acre)", "Sonic (6.45 oz/acre)",  "Authority Assist (10 fl. oz/acre)",  "Zidua (3 oz/acre)", "Outlook (18 fl. oz/acre)", "Zidua (1.5 oz/acre)", "Outlook (9 fl. oz/acre)",  "Dual II Magnum (26.7 fl. oz/acre)", "Dual II Magnum (13.4 fl. oz/acre)", "Warrant (48 fl. oz/acre)", "Warrant (24 fl. oz/acre)", "Sharpen (1 fl. oz/acre)", "Valor SX (3 oz/acre)", "Spartan (8 fl. oz/acre)", "Tricor DF (10.7 oz/acre)", "FirstRate (0.6 oz/acre)", "Classic (3 oz/acre)", "Pursuit (4 fl. oz/acre)"), labels=c("Fierce MTZ (16 fl. oz/acre)", "Fierce XLT (3.75-4 oz/acre)", "Zidua PRO (6 fl. oz/acre)", "Trivence (6 oz/acre)", "Afforia (2.5 oz/acre)", "Enlite (2.8 oz/acre)", "Canopy DF (2.25 oz/acre)", "Boundary (28.8 fl. oz/acre)", "Fierce (3-4 oz/acre)", "Prefix (32 fl. oz/acre)", "Verdict (5 fl. oz/acre)", "Authority Supreme (8 fl. oz/acre)", "Authority MTZ (12-16 oz/acre)", "Broadaxe XC (25 fl. oz/acre)", "Valor XLT (3 oz/acre)",  "Surveil (3.5 oz/acre)", "Sonic (6.45 oz/acre)",  "Authority Assist (10 fl. oz/acre)",  "Zidua (3 oz/acre)", "Outlook (18 fl. oz/acre)", "Zidua (1.5 oz/acre)", "Outlook (9 fl. oz/acre)",  "Dual II Magnum (26.7 fl. oz/acre)", "Dual II Magnum (13.4 fl. oz/acre)", "Warrant (48 fl. oz/acre)", "Warrant (24 fl. oz/acre)", "Sharpen (1 fl. oz/acre)", "Valor SX (3 oz/acre)", "Spartan (8 fl. oz/acre)", "Tricor DF (10.7 oz/acre)", "FirstRate (0.6 oz/acre)", "Classic (3 oz/acre)", "Pursuit (4 fl. oz/acre)")) 
+```
+
+
+```{r, echo=FALSE, include=FALSE}
+ggplot(new, aes(x=reorder(herbicide, prop), y=prop*100)) + facet_wrap(year ~ DAT, nrow = 1) +  coord_flip() + 
+  geom_point(size=3, color="#282728") + 
+  #geom_bar(stat="identity", fill="grey") +
+#    geom_rect(aes(xmin=0,xmax=4.5,ymin=-Inf,ymax=Inf),
+#                    fill="yellow") + 
+ theme_bw() +  labs(y="Waterhemp control (%)", x="", title="Waterhemp control - Lancaster, WI") +
+     geom_errorbar(aes(ymin  =  lower.CL*100, ymax  =  upper.CL*100), width =  0.2, size  =  0.8, color="#282728") + theme(axis.title = element_text(size=22, color="#282728", face="bold"), axis.text.x = element_text(size=20, angle=45, hjust=1, color="#282728"), axis.text.y = element_text(size=18, color="#282728"),
+      plot.title = element_text(size=30, face="bold", hjust = 0.5, color="#c5050c"),  strip.text = element_text(size=25, face="bold", color="#282728"), strip.background =element_rect(fill="#dadfe1")) + geom_hline(yintercept=90, linetype="dashed", color="#c5050c", size=1.2) +
+  ggsave("Figure2.png", width=22, height=14, dpi=600)
+```
+
+```{r, echo=FALSE, include=FALSE}
+ggplot(new, aes(x=reorder(herbicide, prop), y=prop*100)) + facet_wrap(year ~ DAT, nrow = 1) +  coord_flip() + 
+ # geom_point(size=3, color="#282728") + 
+  geom_bar(stat="identity", fill="grey") +
+#    geom_rect(aes(xmin=0,xmax=4.5,ymin=-Inf,ymax=Inf),
+#                    fill="yellow") + 
+ theme_bw() +  labs(y="Waterhemp control (%)", x="", title="Waterhemp control - Lancaster, WI") +
+     geom_errorbar(aes(ymin  =  lower.CL*100, ymax  =  upper.CL*100), width =  0.2, size  =  0.8, color="#282728") + theme(axis.title = element_text(size=22, color="#282728", face="bold"), axis.text.x = element_text(size=20, angle=45, hjust=1, color="#282728"), axis.text.y = element_text(size=18, color="#282728"),
+      plot.title = element_text(size=30, face="bold", hjust = 0.5, color="#c5050c"),  strip.text = element_text(size=25, face="bold", color="#282728"), strip.background =element_rect(fill="#dadfe1")) + geom_hline(yintercept=90, linetype="dashed", color="#c5050c", size=1.2) +
+  ggsave("Figure.png", width=22, height=14, dpi=600)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Biomass
+
+```{r, echo=FALSE, include=FALSE}
+ggplot(data, aes(x=herbicide, y=biomass, color=herbicide)) + geom_jitter() + coord_flip() + theme(legend.position = "none")  ## Checking the data
+```
+
+
+
+
+```{r, include=FALSE, echo=FALSE}
+library(ggpubr) ## Checking normality
+ggdensity(data$biomass)
+```
+
+```{r, include=FALSE, echo=FALSE}
+ggqqplot(data$biomass)
+```
+
+## Transforming the data
+```{r, echo=FALSE, include=FALSE}
+library(nortest) 
+pearson.test(data$biomass)
+```
+
+
+```{r, echo=FALSE, include=FALSE}
+library(bestNormalize)
+biom <- bestNormalize(data$biomass, loo=TRUE)
+ggdensity(biom$x.t)
+```
+
+
+
+
+
+
+```{r, echo=FALSE, include=FALSE}
+model3 <- lmer(sqrt(biomass) ~ herbicide*year + (1|rep), data=data)
+summary(model3)
+anova(model3)
+```
+
+
+```{r, echo=FALSE, include=FALSE}
+emmip(model3, herbicide ~ year | year) 
+```
+
+```{r, echo=FALSE, include=FALSE}
+plot(emmeans(model3, ~ herbicide | year*herbicide))
+```
+
+
+
+```{r, echo=FALSE, include=FALSE}
+Lsmeans3 <- emmeans(model3, ~ herbicide | year*herbicide, cont="pairwise", adjust="none", type="response")
+```
+
+```{r, warning=FALSE, echo=FALSE}
+CLD(Lsmeans3, alpha=0.05, Letters=letters, adjust="none", reversed = TRUE)
+```
+
+
+```{r, echo=FALSE, include=FALSE}
+plot(Lsmeans3, comparisons =TRUE, adjust="none") + theme_bw()
+```
